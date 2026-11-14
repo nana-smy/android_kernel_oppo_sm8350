@@ -28,6 +28,7 @@ ENABLE_SUSFS="${ENABLE_SUSFS:-true}"
 SUSFS_REF="${SUSFS_REF:-kernel-5.4}"
 LTO="${LTO:-false}"
 BUILD_MODULES="${BUILD_MODULES:-true}"
+AK3_ENABLE="${AK3_ENABLE:-false}"         # true 才打 AnyKernel3
 AK3_DEVICES="${AK3_DEVICES:-}"          # 设备代号，空格分隔，例如 "peux PEEM00"
 AK3_DEVICECHECK="${AK3_DEVICECHECK:-true}"   # false 时 anykernel.sh 里 do.devicecheck=0，跳过错机型拦截
 JOBS="${JOBS:-$(nproc)}"
@@ -292,8 +293,16 @@ fi
 # -----------------------------------------------------------------------------
 # 8. 可选 AnyKernel3 打包
 # -----------------------------------------------------------------------------
-if [ -n "$AK3_DEVICES" ]; then
-  log "8/8 打包 AnyKernel3 ($AK3_DEVICES, devicecheck=$AK3_DEVICECHECK)"
+if [ "$AK3_ENABLE" = "true" ]; then
+  # 校验关闭时：不读代号、属 anykernel.sh 里 do.devicecheck=0
+  if [ "$AK3_DEVICECHECK" = "true" ] && [ -z "${AK3_DEVICES// /}" ]; then
+    echo "[!] 开了设备校验却没填代号，自动降级为 do.devicecheck=0"
+    AK3_DEVICECHECK=false
+  fi
+  if [ "$AK3_DEVICECHECK" != "true" ]; then
+    AK3_DEVICES=""
+  fi
+  log "8/8 打包 AnyKernel3 (devicecheck=$AK3_DEVICECHECK, names=${AK3_DEVICES:-<none>})"
   AK3="$WORK/AnyKernel3"
   rm -rf "$AK3"
   git clone --depth 1 https://github.com/osm0sis/AnyKernel3.git "$AK3"
