@@ -154,6 +154,14 @@ if [ "$ENABLE_SUSFS" = "true" ]; then
     exit 1
   fi
   find . -name '*.orig' -not -path './.git/*' -delete 2>/dev/null || true
+
+  # SUSFS Inline Hook：ReSukiSU/BakaSU 在 non-GKI 内核上要求 ksu_handle_* 钩子，
+  # 官方脚本把钩子插入 fs/exec.c、fs/open.c、fs/stat.c、kernel/sys.c 等处
+  log "4b/8 注入 SUSFS inline hooks"
+  bash "$SCRIPT_DIR/susfs_inline_hook_patches.sh" > /tmp/hooks.log 2>&1 || {
+    tail -30 /tmp/hooks.log; echo "[-] inline hook 注入失败"; exit 1;
+  }
+  grep -c "ksu_handle" kernel/sys.c fs/exec.c fs/open.c fs/stat.c fs/read_write.c kernel/reboot.c drivers/input/input.c 2>/dev/null | sed 's/^/   /' 
 else
   log "4/8 跳过 SUSFS"
 fi
