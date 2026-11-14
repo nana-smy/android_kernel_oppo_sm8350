@@ -247,10 +247,8 @@ MAKE_ARGS=(
   STRIP=llvm-strip
   DISABLE_WRAPPER=1            # 关掉 gcc-wrapper.py，否则普通告警即致命错误
 )
-KCFLAGS="-Wno-unknown-warning-option -Wno-error=strict-prototypes \
--Wno-error=implicit-function-declaration -Wno-error=implicit-int -Wno-error=return-type \
--Wno-error=incompatible-pointer-types -Wno-error=date-time \
--Wno-error=vla-extension -Wno-vla-extension"
+# 全局取消 -Werror：kernel 与各子目录 Makefile 里硬编码的 -Werror 一律不致命
+KCFLAGS="-Wno-unknown-warning-option -Wno-error"
 
 make "${MAKE_ARGS[@]}" olddefconfig > /tmp/olddef.log 2>&1 || {
   tail -40 /tmp/olddef.log
