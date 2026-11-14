@@ -213,6 +213,8 @@ fi
 
 # CONFIG_WERROR 会把 clang 的任意新告警变成致命错误，OPPO 私有代码在 clang 12 下过不了
 ./scripts/config --file out/.config -d WERROR || true
+# OPPO 私有代码有大量 section mismatch，modpost 默认当致命错误
+./scripts/config --file out/.config -e SECTION_MISMATCH_WARN_ONLY || true
 
 if [ "$LTO" != "true" ]; then
   # 4G/2 核或 4 核 runner 上 LTO/CFI 极易 OOM；关闭后功能不受影响
