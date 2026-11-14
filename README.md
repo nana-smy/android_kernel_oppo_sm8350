@@ -20,7 +20,9 @@
 | `clang_version` | AOSP prebuilt clang | `clang-r487747c` |
 | `lto` | 保留 LTO/CFI/SCS（吃内存） | false |
 | `build_modules` | 编译 .ko | true |
-| `ak3_devices` | AnyKernel3 设备代号，留空则不打 AK3 | 空 |
+| `ak3_enable` | 是否打包 AnyKernel3 刷机包（关则只出裸 Image/dtb） | false |
+| `ak3_devices` | 设备代号，空格分隔（`peux PEEM00`）；仅在校验开启时使用 | 空 |
+| `ak3_devicecheck` | 刷入时校验设备代号；关闭则 `do.devicecheck=0` 且忽略代号 | true |
 
 产物：`Image` / `Image.gz`、`dtb/`（含 dtbo）、`config-<branch>`、`modules/`、可选 `kernel-AK3-<branch>.zip`。
 
