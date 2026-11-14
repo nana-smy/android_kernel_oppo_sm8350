@@ -15,6 +15,8 @@
 # =============================================================================
 set -euo pipefail
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
 KERNEL_REPO="${KERNEL_REPO:-https://github.com/nana-smy/android_kernel_oppo_sm8350.git}"
 VENDOR_REPO="${VENDOR_REPO:-https://github.com/nana-smy/android_kernel_modules_and_devicetree_oppo_sm8350.git}"
 
@@ -141,7 +143,7 @@ if [ "$ENABLE_SUSFS" = "true" ]; then
 
   if [ -f fs/proc/fd.c.rej ]; then
     echo "[!] fs/proc/fd.c 有冲突（OPPO 改过 seq_show），执行兼容修正"
-    python3 "$(dirname "$0")/fix_fd_proc.py" fs/proc/fd.c
+    python3 "$SCRIPT_DIR/fix_fd_proc.py" fs/proc/fd.c
     rm -f fs/proc/fd.c.rej
   fi
 
