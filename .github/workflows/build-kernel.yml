@@ -18,6 +18,7 @@ on:
           - "oppo/sm8350_t_13.0.0_find_x3_pro"
           - "oppo/sm8350_t_13.0.0_k10_pro"
           - "oppo/sm8350_s_13.0.0_find_x5"
+          - "oppo/sm8350_s_13.0.0_find_n"
           - "oppo/sm8350_s_12.1_find_x3_pro"
           - "oppo/sm8350_s_12.1_oppo_k10_pro_5g"
           - "oppo/sm8350_s_12.1_oppo_luwu"
@@ -52,11 +53,11 @@ on:
       clang_version:
         description: "AOSP prebuilt clang"
         type: choice
-        default: "clang-r487747c"
+        default: "clang-r383902b"
         options:
-          - "clang-r487747c"   # android14-release，推荐 u_14 分支
-          - "clang-r416183b"   # android13-release
-          - "clang-r383902b"   # android12-release（原厂 12.1 用的版本）
+          - "clang-r383902b"   # android12-release, clang 12，5.4 内核已验证
+          - "clang-r416183b"   # android13-release, clang 14
+          - "clang-r487747c"   # android14-release, 较新，5.4 可能有新告警
 
       lto:
         description: "保留 LTO/CFI/SCS（需大内存，默认关闭）"
@@ -64,7 +65,7 @@ on:
         default: false
 
       build_modules:
-        description: "编译 .ko 模块"
+        description: "编译 .ko 模块（手动触发默认开，push 触发默认关）"
         type: boolean
         default: true
 
@@ -73,16 +74,21 @@ on:
         type: string
         default: ""
 
+  push:
+    paths:
+      - ".github/workflows/build-kernel.yml"
+      - "scripts/**"
+
 permissions:
-  contents: read
+  contents: write
 
 concurrency:
-  group: build-${{ github.ref }}-${{ inputs.kernel_branch }}
+  group: build-${{ github.ref }}-${{ inputs.kernel_branch || 'auto' }}
   cancel-in-progress: false
 
 jobs:
   build:
-    name: "Build ${{ inputs.kernel_branch }}"
+    name: "Build ${{ inputs.kernel_branch || 'auto' }}"
     runs-on: ubuntu-24.04
     timeout-minutes: 360
 
@@ -97,7 +103,7 @@ jobs:
       SUSFS_REF: ${{ inputs.susfs_ref }}
       CLANG_VERSION: ${{ inputs.clang_version }}
       LTO: ${{ inputs.lto }}
-      BUILD_MODULES: ${{ inputs.build_modules }}
+      BUILD_MODULES: ${{ inputs.build_modules || 'false' }}
       AK3_DEVICES: ${{ inputs.ak3_devices }}
 
     steps:
@@ -125,7 +131,7 @@ jobs:
       - name: Configure ccache
         uses: hendrikmuhs/ccache-action@v1.2
         with:
-          key: ${{ inputs.kernel_branch }}-${{ inputs.clang_version }}-${{ inputs.resukisu }}-${{ inputs.susfs }}
+          key: ${{ inputs.kernel_branch || 'u14' }}-${{ inputs.clang_version || 'r383902b' }}-${{ inputs.resukisu }}-${{ inputs.susfs }}
           max-size: 2G
 
       - name: Build kernel
@@ -133,32 +139,36 @@ jobs:
           JOBS: "4"
           WORK: ${{ github.workspace }}/tree
           ARTIFACTS: ${{ github.workspace }}/artifacts
-        run: bash scripts/build.sh
-
-      - name: Build summary
-        if: always()
         run: |
-          {
-            echo "### OPPO SM8350 内核编译"
-            echo ""
-            echo "| 项目 | 值 |"
-            echo "| --- | --- |"
-            echo "| 分支 | \`${{ inputs.kernel_branch }}\` |"
-            echo "| Clang | \`${{ inputs.clang_version }}\` |"
-            echo "| ReSukiSU | ${{ inputs.resukisu }} (${{ inputs.resukisu_ref }}) |"
-            echo "| SUSFS | ${{ inputs.susfs }} (${{ inputs.susfs_ref }}) |"
-            echo "| LTO/CFI | ${{ inputs.lto }} |"
-            echo ""
-            ls -lh artifacts 2>/dev/null || true
-          } >> $GITHUB_STEP_SUMMARY
+          set -o pipefail
+          bash scripts/build.sh 2>&1 | tee build.log
 
       - name: Upload artifacts
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: kernel-${{ replace(inputs.kernel_branch, '/', '-') }}-${{ inputs.resukisu == true && 'ksu' || 'plain' }}-${{ inputs.susfs == true && 'susfs' || 'nosusfs' }}
+          name: kernel-${{ replace(inputs.kernel_branch || 'auto', '/', '-') }}-${{ inputs.resukisu == false && 'plain' || 'ksu' }}-${{ inputs.susfs == false && 'nosusfs' || 'susfs' }}
           path: |
             artifacts/
-            tree/kernel/msm-5.4/out/.config
+            build.log
           if-no-files-found: warn
           retention-days: 14
+
+      # 把编译日志回传到 ci-logs 分支，便于运维/助手直接读取失败原因
+      - name: Publish build log to ci-logs branch
+        if: always()
+        run: |
+          set -e
+          BRANCH="ci-logs"
+          TMP=$(mktemp -d)
+          mkdir -p "$TMP"
+          cp build.log "$TMP/build-${{ github.run_id }}.log" 2>/dev/null || true
+          cp /tmp/olddef.log "$TMP/olddefconfig-${{ github.run_id }}.log" 2>/dev/null || true
+          cp /tmp/susfs.log "$TMP/susfs-patch-${{ github.run_id }}.log" 2>/dev/null || true
+          cd "$TMP"
+          git init -q -b "$BRANCH"
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add .
+          git commit -q -m "ci logs: run ${{ github.run_id }} (${{ job.status }})" || true
+          git push -f "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" "$BRANCH"
