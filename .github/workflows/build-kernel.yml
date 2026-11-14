@@ -105,6 +105,10 @@ jobs:
       - name: Checkout workflow repository
         uses: actions/checkout@v4
 
+      - name: Compute artifact name
+        id: meta
+        run: echo "safe=$(echo '${{ inputs.kernel_branch }}' | tr '/' '-')" >> "$GITHUB_OUTPUT"
+
       - name: Free disk space
         uses: jlumbroso/free-disk-space@main
         with:
@@ -142,7 +146,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: kernel-${{ replace(inputs.kernel_branch || 'auto', '/', '-') }}-${{ inputs.resukisu == false && 'plain' || 'ksu' }}-${{ inputs.susfs == false && 'nosusfs' || 'susfs' }}
+          name: kernel-${{ steps.meta.outputs.safe }}-${{ inputs.resukisu == false && 'plain' || 'ksu' }}-${{ inputs.susfs == false && 'nosusfs' || 'susfs' }}
           path: |
             artifacts/
             build.log
