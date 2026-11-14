@@ -31,6 +31,7 @@ BUILD_MODULES="${BUILD_MODULES:-true}"
 AK3_ENABLE="${AK3_ENABLE:-false}"         # true 才打 AnyKernel3
 AK3_DEVICES="${AK3_DEVICES:-}"          # 设备代号，空格分隔，例如 "peux PEEM00"
 AK3_DEVICECHECK="${AK3_DEVICECHECK:-true}"   # false 时 anykernel.sh 里 do.devicecheck=0，跳过错机型拦截
+AK3_MODULES="${AK3_MODULES:-false}"         # true 时把 modules 产物作为 ak3-helper 模块一起刷（需 Magisk/KernelSU）
 JOBS="${JOBS:-$(nproc)}"
 
 WORK="${WORK:-$PWD/tree}"
@@ -307,14 +308,33 @@ if [ "$AK3_ENABLE" = "true" ]; then
   git clone --depth 1 https://github.com/osm0sis/AnyKernel3.git "$AK3"
   rm -rf "$AK3/.git" "$AK3/README.md"
   cp "$BOOT/Image" "$AK3/Image"
-  python3 - "$AK3/anykernel.sh" "$AK3_DEVICES" "$AK3_DEVICECHECK" <<'AK3PY'
+  # 模块：AK3 的 do.modules + do.systemless 会把 modules/ 做成人 ak3-helper 模块
+  MOD_CHECK=0
+  if [ "$AK3_MODULES" = "true" ]; then
+    if [ "$BUILD_MODULES" != "true" ]; then
+      echo "[!] ak3_modules=true 但 build_modules=false，无模块可打包"
+    elif ls -d "$ARTIFACTS"/modules/lib/modules/* >/dev/null 2>&1; then
+      KVER=$(basename "$(ls -d "$ARTIFACTS"/modules/lib/modules/* | head -1)")
+      mkdir -p "$AK3/modules/vendor/lib/modules"
+      cp -a "$ARTIFACTS/modules/lib/modules/$KVER" "$AK3/modules/vendor/lib/modules/"
+      MOD_CHECK=1
+      echo "[+] 已放入模块 $KVER（$(find "$AK3/modules" -name '*.ko' | wc -l) 个 .ko）→ modules/vendor/lib/modules"
+    else
+      echo "[!] 未找到 modules 产物，跳过"
+    fi
+  fi
+  python3 - "$AK3/anykernel.sh" "$AK3_DEVICES" "$AK3_DEVICECHECK" "$MOD_CHECK" <<'AK3PY'
 import re, sys
-path, names, check = sys.argv[1], sys.argv[2].split(), sys.argv[3].lower() == "true"
+path, names = sys.argv[1], sys.argv[2].split()
+check = sys.argv[3].lower() == "true"
+mods = int(sys.argv[4])
 s = open(path).read()
 out, inserted = [], False
 for ln in s.splitlines():
     if re.match(r"\s*#?\s*do\.devicecheck\s*=", ln):
         out.append("do.devicecheck=%d" % (1 if check else 0))
+        out.append("do.modules=%d" % mods)
+        out.append("do.systemless=1")
         for i, n in enumerate(names, 1):
             out.append("device.name%d=%s" % (i, n))
         inserted = True
@@ -328,7 +348,7 @@ if not inserted:
     for i, n in enumerate(names, 1):
         s += "device.name%d=%s\n" % (i, n)
 open(path, "w").write(s)
-print("[+] anykernel.sh: do.devicecheck=%d, names=%s" % (1 if check else 0, names))
+print("[+] anykernel.sh: do.devicecheck=%d, do.modules=%d, names=%s" % (1 if check else 0, mods, names))
 AK3PY
   if ls "$ARTIFACTS"/dtb/*.dtb >/dev/null 2>&1; then
     mkdir -p "$AK3/dtb"
