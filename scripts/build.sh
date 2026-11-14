@@ -68,19 +68,36 @@ fi
 # 2. 工具链：AOSP prebuilt clang
 # -----------------------------------------------------------------------------
 log "2/8 准备 clang ($CLANG_VERSION)"
-if [ ! -x "$WORK/clang-aosp/$CLANG_VERSION/bin/clang" ]; then
-  case "$CLANG_VERSION" in
-    clang-r383902b) CLANG_BRANCH=android12-release ;;
-    clang-r416183b) CLANG_BRANCH=android13-release ;;
-    clang-r450784d|clang-r450784e) CLANG_BRANCH=android13-release ;;
-    clang-r487747c|clang-r487747) CLANG_BRANCH=android14-release ;;
-    *) echo "[-] 未知 clang 版本 $CLANG_VERSION"; exit 1 ;;
-  esac
+case "$CLANG_VERSION" in
+  clang-r383902b) CLANG_BRANCH=android12-release ;;
+  clang-r416183b) CLANG_BRANCH=android13-release ;;
+  clang-r450784d|clang-r450784e) CLANG_BRANCH=android13-release ;;
+  clang-r487747c|clang-r487747) CLANG_BRANCH=android14-release ;;
+  *) echo "[-] 未知 clang 版本 $CLANG_VERSION"; exit 1 ;;
+esac
+
+if [ ! -d "$WORK/clang-aosp" ]; then
   git clone --depth 1 -b "$CLANG_BRANCH" \
     https://android.googlesource.com/platform/prebuilts/clang/host/linux-x86 \
     "$WORK/clang-aosp"
 fi
-export PATH="$WORK/clang-aosp/$CLANG_VERSION/bin:$PATH"
+
+CLANG_DIR="$WORK/clang-aosp/$CLANG_VERSION"
+if [ ! -x "$CLANG_DIR/bin/clang" ]; then
+  echo "[!] 未找到 $CLANG_VERSION，预置目录内容如下："
+  ls -1 "$WORK/clang-aosp" | head -30
+  CLANG_DIR=""
+  for d in "$WORK"/clang-aosp/clang-r*; do
+    [ -x "$d/bin/clang" ] && CLANG_DIR="$d"
+  done
+  [ -n "$CLANG_DIR" ] && echo "[!] 回退使用 $CLANG_DIR"
+fi
+if [ -z "${CLANG_DIR:-}" ] || [ ! -x "$CLANG_DIR/bin/clang" ]; then
+  echo "[-] 没有可用的 clang 可执行文件"
+  exit 1
+fi
+export PATH="$CLANG_DIR/bin:$PATH"
+export LD_LIBRARY_PATH="$CLANG_DIR/lib:$CLANG_DIR/lib64:${LD_LIBRARY_PATH:-}"
 clang --version | head -2
 
 # -----------------------------------------------------------------------------
