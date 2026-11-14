@@ -28,7 +28,8 @@ ENABLE_SUSFS="${ENABLE_SUSFS:-true}"
 SUSFS_REF="${SUSFS_REF:-kernel-5.4}"
 LTO="${LTO:-false}"
 BUILD_MODULES="${BUILD_MODULES:-true}"
-AK3_DEVICES="${AK3_DEVICES:-}"          # 例如 "peux"，留空则不打 AnyKernel3
+AK3_DEVICES="${AK3_DEVICES:-}"          # 设备代号，空格分隔，例如 "peux PEEM00"
+AK3_DEVICECHECK="${AK3_DEVICECHECK:-true}"   # false 时 anykernel.sh 里 do.devicecheck=0，跳过错机型拦截
 JOBS="${JOBS:-$(nproc)}"
 
 WORK="${WORK:-$PWD/tree}"
@@ -292,18 +293,38 @@ fi
 # 8. 可选 AnyKernel3 打包
 # -----------------------------------------------------------------------------
 if [ -n "$AK3_DEVICES" ]; then
-  log "8/8 打包 AnyKernel3 ($AK3_DEVICES)"
+  log "8/8 打包 AnyKernel3 ($AK3_DEVICES, devicecheck=$AK3_DEVICECHECK)"
   AK3="$WORK/AnyKernel3"
   rm -rf "$AK3"
   git clone --depth 1 https://github.com/osm0sis/AnyKernel3.git "$AK3"
   rm -rf "$AK3/.git" "$AK3/README.md"
   cp "$BOOT/Image" "$AK3/Image"
-  grep -q "kernel.string=.*" "$AK3/anykernel.sh" || true
-  sed -i "s/^device.name1=.*/device.name1=$AK3_DEVICES/" "$AK3/anykernel.sh" || true
+  python3 - "$AK3/anykernel.sh" "$AK3_DEVICES" "$AK3_DEVICECHECK" <<'AK3PY'
+import re, sys
+path, names, check = sys.argv[1], sys.argv[2].split(), sys.argv[3].lower() == "true"
+s = open(path).read()
+out, inserted = [], False
+for ln in s.splitlines():
+    if re.match(r"\s*#?\s*do\.devicecheck\s*=", ln):
+        out.append("do.devicecheck=%d" % (1 if check else 0))
+        for i, n in enumerate(names, 1):
+            out.append("device.name%d=%s" % (i, n))
+        inserted = True
+        continue
+    if re.match(r"\s*device\.name\d+\s*=", ln):
+        continue
+    out.append(ln)
+s = "\n".join(out) + "\n"
+if not inserted:
+    s += "do.devicecheck=%d\n" % (1 if check else 0)
+    for i, n in enumerate(names, 1):
+        s += "device.name%d=%s\n" % (i, n)
+open(path, "w").write(s)
+print("[+] anykernel.sh: do.devicecheck=%d, names=%s" % (1 if check else 0, names))
+AK3PY
   if ls "$ARTIFACTS"/dtb/*.dtb >/dev/null 2>&1; then
     mkdir -p "$AK3/dtb"
     cp "$ARTIFACTS"/dtb/*.dtb "$AK3/dtb/"
-    sed -i 's/^#do.devicecheck=1/do.devicecheck=0/' "$AK3/anykernel.sh" || true
   fi
   (cd "$AK3" && zip -r9 "$ARTIFACTS/kernel-AK3-${KERNEL_BRANCH//\//_}.zip" . -x '*.git*' >/dev/null)
 fi
