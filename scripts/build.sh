@@ -127,23 +127,36 @@ fi
 # 4. SUSFS 内核补丁（可选）
 # -----------------------------------------------------------------------------
 if [ "$ENABLE_SUSFS" = "true" ]; then
-  log "4/8 打 SUSFS 内核补丁 (susfs4ksu@$SUSFS_REF)"
-  rm -rf "$WORK/susfs4ksu"
-  git clone --depth 1 -b "$SUSFS_REF" https://gitlab.com/simonpunk/susfs4ksu.git "$WORK/susfs4ksu"
-  S="$WORK/susfs4ksu/kernel_patches"
-
-  # 官方补丁不含新文件，需要先拷贝
-  cp "$S/fs/susfs.c" fs/
-  cp "$S/include/linux/susfs.h" "$S/include/linux/susfs_def.h" include/linux/
+  case "$SUSFS_REF" in
+    susfs4ksu*|kernel-5.4|master)
+      log "4/8 打 SUSFS 内核补丁 (susfs4ksu@$SUSFS_REF)"
+      rm -rf "$WORK/susfs4ksu"
+      git clone --depth 1 -b "$SUSFS_REF" https://gitlab.com/simonpunk/susfs4ksu.git "$WORK/susfs4ksu"
+      S="$WORK/susfs4ksu/kernel_patches"
+      PATCHFILE="$S/50_add_susfs_in_kernel-5.4.patch"
+      # 老版补丁不含新文件，需先拷贝
+      cp "$S/fs/susfs.c" fs/ 2>/dev/null || true
+      cp "$S/include/linux/susfs.h" "$S/include/linux/susfs_def.h" include/linux/ 2>/dev/null || true
+      ;;
+    *)
+      # JackA1ltman 维护的最新 5.4 移植补丁（自带新文件 + 新版 CMD_SUSFS_*，
+      # 可满足 ReSukiSU v4.2 supercall 的 CMD_SUSFS_ADD_SUS_MAP 等定义）
+      log "4/8 打 SUSFS 内核补丁 (JackA1ltman NonGKI_Kernel_Build_2nd)"
+      rm -rf "$WORK/nongki-ref"
+      git clone --depth 1 https://github.com/JackA1ltman/NonGKI_Kernel_Build_2nd.git "$WORK/nongki-ref"
+      PATCHFILE="$WORK/nongki-ref/Patches/Patch/susfs_patch_to_5.4.patch"
+      ;;
+  esac
 
   set +e
-  patch -p1 --forward --fuzz=3 < "$S/50_add_susfs_in_kernel-5.4.patch" > /tmp/susfs.log 2>&1
+  patch -p1 --forward --fuzz=3 < "$PATCHFILE" > /tmp/susfs.log 2>&1
   set -e
   grep -E '^patching file' /tmp/susfs.log | wc -l | xargs -I{} echo "[+] 打进 {} 个文件" || true
+  grep -E "CMD_SUSFS_ADD_SUS_MAP" include/linux/susfs_def.h >/dev/null 2>&1 && echo "[+] susfs_def.h 含新版 CMD" || echo "[!] susfs_def.h 无 CMD_SUSFS_ADD_SUS_MAP"
 
   if [ -f fs/proc/fd.c.rej ]; then
     echo "[!] fs/proc/fd.c 有冲突（OPPO 改过 seq_show），执行兼容修正"
-    python3 "$SCRIPT_DIR/fix_fd_proc.py" fs/proc/fd.c
+    python3 "$SCRIPT_DIR/fix_fd_proc.py" fs/proc/fd.c || true
     rm -f fs/proc/fd.c.rej
   fi
 
@@ -151,12 +164,12 @@ if [ "$ENABLE_SUSFS" = "true" ]; then
   if [ "$REJ" != "0" ]; then
     echo "[-] 仍有 $REJ 个 .rej，SUSFS 补丁不完整："
     find . -name '*.rej' -not -path './.git/*' | head -20
+    for f in $(find . -name '*.rej' -not -path './.git/*' | head -5); do echo "--- $f"; head -30 "$f"; done
     exit 1
   fi
   find . -name '*.orig' -not -path './.git/*' -delete 2>/dev/null || true
 
-  # SUSFS Inline Hook：ReSukiSU/BakaSU 在 non-GKI 内核上要求 ksu_handle_* 钩子，
-  # 官方脚本把钩子插入 fs/exec.c、fs/open.c、fs/stat.c、kernel/sys.c 等处
+  # SUSFS Inline Hook：ReSukiSU/BakaSU 在 non-GKI 内核上要求 ksu_handle_* 钩子
   log "4b/8 注入 SUSFS inline hooks"
   bash "$SCRIPT_DIR/susfs_inline_hook_patches.sh" > /tmp/hooks.log 2>&1 || {
     tail -30 /tmp/hooks.log; echo "[-] inline hook 注入失败"; exit 1;
