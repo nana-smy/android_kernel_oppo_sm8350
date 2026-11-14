@@ -79,6 +79,11 @@ on:
         type: string
         default: ""
 
+      ak3_modules:
+        description: "把 .ko 作为 ak3-helper 模块随 AK3 刷入（需 Magisk/KernelSU）"
+        type: boolean
+        default: false
+
       ak3_devicecheck:
         description: "AK3 刷入时校验设备代号；关闭则 do.devicecheck=0 且不使用上面的代号"
         type: boolean
@@ -112,6 +117,7 @@ jobs:
       AK3_ENABLE: ${{ inputs.ak3_enable }}
       AK3_DEVICES: ${{ inputs.ak3_devices }}
       AK3_DEVICECHECK: ${{ inputs.ak3_devicecheck }}
+      AK3_MODULES: ${{ inputs.ak3_modules }}
 
     steps:
       - name: Checkout workflow repository
