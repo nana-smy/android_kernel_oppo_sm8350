@@ -212,9 +212,9 @@ MAKE_ARGS=(
   STRIP=llvm-strip
   DISABLE_WRAPPER=1            # 关掉 gcc-wrapper.py，否则普通告警即致命错误
 )
-KCFLAGS="-Wno-error=strict-prototypes -Wno-error=implicit-function-declaration \
--Wno-error=implicit-int -Wno-error=return-type -Wno-error=incompatible-pointer-types \
--Wno-error=designated-init -Wno-error=date-time"
+KCFLAGS="-Wno-unknown-warning-option -Wno-error=strict-prototypes \
+-Wno-error=implicit-function-declaration -Wno-error=implicit-int -Wno-error=return-type \
+-Wno-error=incompatible-pointer-types -Wno-error=date-time"
 
 make "${MAKE_ARGS[@]}" olddefconfig > /tmp/olddef.log 2>&1 || {
   tail -40 /tmp/olddef.log
