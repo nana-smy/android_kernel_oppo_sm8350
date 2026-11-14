@@ -1,0 +1,164 @@
+name: Build OPPO SM8350 Kernel
+
+on:
+  workflow_dispatch:
+    inputs:
+      kernel_branch:
+        description: "内核/vendor 分支"
+        type: choice
+        required: true
+        default: "oppo/sm8350_u_14.0.0_find_x3_pro"
+        options:
+          - "oppo/sm8350_u_14.0.0_find_x3_pro"
+          - "oppo/sm8350_u_14.0.0_find_x3_pro_lensman"
+          - "oppo/sm8350_u_14.0.0_find_x5"
+          - "oppo/sm8350_u_14.0.0_find_n"
+          - "oppo/sm8350_u_14.0_k10_pro_5g"
+          - "oppo/sm8350_v_15.0.0_find_x5"
+          - "oppo/sm8350_t_13.0.0_find_x3_pro"
+          - "oppo/sm8350_t_13.0.0_k10_pro"
+          - "oppo/sm8350_s_13.0.0_find_x5"
+          - "oppo/sm8350_s_12.1_find_x3_pro"
+          - "oppo/sm8350_s_12.1_oppo_k10_pro_5g"
+          - "oppo/sm8350_s_12.1_oppo_luwu"
+
+      resukisu:
+        description: "集成 ReSukiSU (KernelSU 分支)"
+        type: boolean
+        default: true
+
+      resukisu_ref:
+        description: "ReSukiSU 版本/分支"
+        type: choice
+        default: "v4.2.0-rc3"
+        options:
+          - "v4.2.0-rc3"
+          - "main"
+          - "v4.1.0"
+
+      susfs:
+        description: "集成 SUSFS (susfs4ksu kernel-5.4)"
+        type: boolean
+        default: true
+
+      susfs_ref:
+        description: "susfs4ksu 分支"
+        type: choice
+        default: "kernel-5.4"
+        options:
+          - "kernel-5.4"
+          - "master"
+
+      clang_version:
+        description: "AOSP prebuilt clang"
+        type: choice
+        default: "clang-r487747c"
+        options:
+          - "clang-r487747c"   # android14-release，推荐 u_14 分支
+          - "clang-r416183b"   # android13-release
+          - "clang-r383902b"   # android12-release（原厂 12.1 用的版本）
+
+      lto:
+        description: "保留 LTO/CFI/SCS（需大内存，默认关闭）"
+        type: boolean
+        default: false
+
+      build_modules:
+        description: "编译 .ko 模块"
+        type: boolean
+        default: true
+
+      ak3_devices:
+        description: "AnyKernel3 设备代号（如 peux），留空则不打 AK3"
+        type: string
+        default: ""
+
+permissions:
+  contents: read
+
+concurrency:
+  group: build-${{ github.ref }}-${{ inputs.kernel_branch }}
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: "Build ${{ inputs.kernel_branch }}"
+    runs-on: ubuntu-24.04
+    timeout-minutes: 360
+
+    env:
+      CCACHE_COMPILERCHECK: "%compiler% -dumpmachine; %compiler% -dumpversion"
+      CCACHE_NOHASHDIR: "true"
+      CCACHE_HARDLINK: "true"
+      KERNEL_BRANCH: ${{ inputs.kernel_branch }}
+      ENABLE_RESUKISU: ${{ inputs.resukisu }}
+      RESUKISU_REF: ${{ inputs.resukisu_ref }}
+      ENABLE_SUSFS: ${{ inputs.susfs }}
+      SUSFS_REF: ${{ inputs.susfs_ref }}
+      CLANG_VERSION: ${{ inputs.clang_version }}
+      LTO: ${{ inputs.lto }}
+      BUILD_MODULES: ${{ inputs.build_modules }}
+      AK3_DEVICES: ${{ inputs.ak3_devices }}
+
+    steps:
+      - name: Checkout workflow repository
+        uses: actions/checkout@v4
+
+      - name: Free disk space
+        uses: jlumbroso/free-disk-space@main
+        with:
+          android: true
+          dotnet: true
+          haskell: true
+          large-packages: true
+          docker-images: true
+          swap-storage: true
+
+      - name: Install build dependencies
+        run: |
+          sudo apt-get update -qq
+          sudo DEBIAN_FRONTEND=noninteractive apt-get install -y -qq \
+            bc bison flex libssl-dev libelf-dev cpio kmod dwarves lz4 zstd \
+            device-tree-compiler xxd jq ccache zip unzip \
+            binutils-aarch64-linux-gnu gcc-aarch64-linux-gnu
+
+      - name: Configure ccache
+        uses: hendrikmuhs/ccache-action@v1.2
+        with:
+          key: ${{ inputs.kernel_branch }}-${{ inputs.clang_version }}-${{ inputs.resukisu }}-${{ inputs.susfs }}
+          max-size: 2G
+
+      - name: Build kernel
+        env:
+          JOBS: "4"
+          WORK: ${{ github.workspace }}/tree
+          ARTIFACTS: ${{ github.workspace }}/artifacts
+        run: bash scripts/build.sh
+
+      - name: Build summary
+        if: always()
+        run: |
+          {
+            echo "### OPPO SM8350 内核编译"
+            echo ""
+            echo "| 项目 | 值 |"
+            echo "| --- | --- |"
+            echo "| 分支 | \`${{ inputs.kernel_branch }}\` |"
+            echo "| Clang | \`${{ inputs.clang_version }}\` |"
+            echo "| ReSukiSU | ${{ inputs.resukisu }} (${{ inputs.resukisu_ref }}) |"
+            echo "| SUSFS | ${{ inputs.susfs }} (${{ inputs.susfs_ref }}) |"
+            echo "| LTO/CFI | ${{ inputs.lto }} |"
+            echo ""
+            ls -lh artifacts 2>/dev/null || true
+          } >> $GITHUB_STEP_SUMMARY
+
+      - name: Upload artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: kernel-${{ replace(inputs.kernel_branch, '/', '-') }}-${{ inputs.resukisu == true && 'ksu' || 'plain' }}-${{ inputs.susfs == true && 'susfs' || 'nosusfs' }}
+          path: |
+            artifacts/
+            tree/kernel/msm-5.4/out/.config
+          if-no-files-found: warn
+          retention-days: 14
