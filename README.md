@@ -1,182 +1,99 @@
-# How do I submit patches to Android Common Kernels
+# OPPO SM8350 内核 CI
 
-1. BEST: Make all of your changes to upstream Linux. If appropriate, backport to the stable releases.
-   These patches will be merged automatically in the corresponding common kernels. If the patch is already
-   in upstream Linux, post a backport of the patch that conforms to the patch requirements below.
+本仓库内置 GitHub Actions 流水线：`.github/workflows/build-kernel.yml` + `scripts/build.sh`，按需编译 `oppo/sm8350_*`
+系列分支的非 GKI 内核，可选集成 **ReSukiSU** 与 **SUSFS**。
 
-2. LESS GOOD: Develop your patches out-of-tree (from an upstream Linux point-of-view). Unless these are
-   fixing an Android-specific bug, these are very unlikely to be accepted unless they have been
-   coordinated with kernel-team@android.com. If you want to proceed, post a patch that conforms to the
-   patch requirements below.
+- 默认分支：`oppo/sm8350_u_14.0.0_find_x3_pro`（Linux 5.4.233，ColorOS 14 / Android 14）
+- 配套 vendor 仓库：`nana-smy/android_kernel_modules_and_devicetree_oppo_sm8350`（`vendor/oplus`、`vendor/qcom/proprietary/devicetree`、techpack）
 
-# Common Kernel patch requirements
+## 使用
 
-- All patches must conform to the Linux kernel coding standards and pass `script/checkpatch.pl`
-- Patches shall not break gki_defconfig or allmodconfig builds for arm, arm64, x86, x86_64 architectures
-(see  https://source.android.com/setup/build/building-kernels)
-- If the patch is not merged from an upstream branch, the subject must be tagged with the type of patch:
-`UPSTREAM:`, `BACKPORT:`, `FROMGIT:`, `FROMLIST:`, or `ANDROID:`.
-- All patches must have a `Change-Id:` tag (see https://gerrit-review.googlesource.com/Documentation/user-changeid.html)
-- If an Android bug has been assigned, there must be a `Bug:` tag.
-- All patches must have a `Signed-off-by:` tag by the author and the submitter
+`Actions` → **Build OPPO SM8350 Kernel** → **Run workflow**：
 
-Additional requirements are listed below based on patch type
+| 输入 | 说明 | 默认 |
+| --- | --- | --- |
+| `kernel_branch` | 内核 + vendor 同时使用的分支（两者分支名一一对应） | `oppo/sm8350_u_14.0.0_find_x3_pro` |
+| `resukisu` | 是否集成 ReSukiSU | true |
+| `resukisu_ref` | ReSukiSU 版本 | `v4.2.0-rc3` |
+| `susfs` | 是否打 SUSFS 内核补丁 | true |
+| `susfs_ref` | susfs4ksu 分支 | `kernel-5.4` |
+| `clang_version` | AOSP prebuilt clang | `clang-r487747c` |
+| `lto` | 保留 LTO/CFI/SCS（吃内存） | false |
+| `build_modules` | 编译 .ko | true |
+| `ak3_devices` | AnyKernel3 设备代号，留空则不打 AK3 | 空 |
 
-## Requirements for backports from mainline Linux: `UPSTREAM:`, `BACKPORT:`
+产物：`Image` / `Image.gz`、`dtb/`（含 dtbo）、`config-<branch>`、`modules/`、可选 `kernel-AK3-<branch>.zip`。
 
-- If the patch is a cherry-pick from Linux mainline with no changes at all
-    - tag the patch subject with `UPSTREAM:`.
-    - add upstream commit information with a `(cherry-picked from ...)` line
-    - Example:
-        - if the upstream commit message is
+## 为什么必须两个仓库一起拉
+
+本内核仓库有 78~96 个符号链接指向仓库外的 `vendor/oplus/...`（充电、触控、性能调度、thermal、sensor、secureguard 等 OPPO 私有代码），
+`arch/arm64/boot/dts/vendor` 指向 `vendor/qcom/proprietary/devicetree`（lahaina 设备树）。
+只克隆内核仓库时 Kconfig 会直接报 `can't open file "kernel/sched_assist/Kconfig"`。
+
+脚本按 AOSP 布局组装：
+
 ```
-        important patch from upstream
-
-        This is the detailed description of the important patch
-
-        Signed-off-by: Fred Jones <fred.jones@foo.org>
-```
-        - then Joe Smith would upload the patch for the common kernel as
-```
-        UPSTREAM: important patch from upstream
-
-        This is the detailed description of the important patch
-
-        Signed-off-by: Fred Jones <fred.jones@foo.org>
-
-        Bug: 135791357
-        Change-Id: I4caaaa566ea080fa148c5e768bb1a0b6f7201c01
-        (cherry-picked from c31e73121f4c1ec41143423ac6ce3ce6dafdcec1)
-        Signed-off-by: Joe Smith <joe.smith@foo.org>
+$WORK/
+├── kernel/msm-5.4     # 内核（必须在 kernel/ 下一层，符号链接按 ../../../vendor 解析）
+└── vendor/
+    ├── oplus/...
+    └── qcom/proprietary/devicetree
 ```
 
-- If the patch requires any changes from the upstream version, tag the patch with `BACKPORT:`
-instead of `UPSTREAM:`.
-    - use the same tags as `UPSTREAM:`
-    - add comments about the changes under the `(cherry-picked from ...)` line
-    - Example:
-```
-        BACKPORT: important patch from upstream
+并把 vendor 仓库的 `kernel/msm-5.4/techpack/{audio,camera,dataipa,display,video}` 合并进内核树。
+脚本开头做断链检查，非 0 直接失败并打印清单。
 
-        This is the detailed description of the important patch
+## ReSukiSU 集成
 
-        Signed-off-by: Fred Jones <fred.jones@foo.org>
-
-        Bug: 135791357
-        Change-Id: I4caaaa566ea080fa148c5e768bb1a0b6f7201c01
-        (cherry-picked from c31e73121f4c1ec41143423ac6ce3ce6dafdcec1)
-        [ Resolved minor conflict in drivers/foo/bar.c ]
-        Signed-off-by: Joe Smith <joe.smith@foo.org>
+```bash
+git clone --depth 1 -b v4.2.0-rc3 https://github.com/ReSukiSU/ReSukiSU.git KernelSU
+ln -sfn ../KernelSU/kernel drivers/kernelsu
+# drivers/Makefile: obj-$(CONFIG_KSU) += kernelsu/
+# drivers/Kconfig:  source "drivers/kernelsu/Kconfig"
 ```
 
-## Requirements for other backports: `FROMGIT:`, `FROMLIST:`,
+`v4.2.x` 起 ReSukiSU 的 `kernel/Kconfig` 已自带 `KSU_SUSFS` 菜单；`v4.1.0` 没有（脚本会提示）。
+`CONFIG_KSU_SUSFS` 依赖 `THREAD_INFO_IN_TASK && 64BIT`，sm8350 满足。
 
-- If the patch has been merged into an upstream maintainer tree, but has not yet
-been merged into Linux mainline
-    - tag the patch subject with `FROMGIT:`
-    - add info on where the patch came from as `(cherry picked from commit <sha1> <repo> <branch>)`. This
-must be a stable maintainer branch (not rebased, so don't use `linux-next` for example).
-    - if changes were required, use `BACKPORT: FROMGIT:`
-    - Example:
-        - if the commit message in the maintainer tree is
-```
-        important patch from upstream
+## SUSFS 集成（官方顺序）
 
-        This is the detailed description of the important patch
-
-        Signed-off-by: Fred Jones <fred.jones@foo.org>
-```
-        - then Joe Smith would upload the patch for the common kernel as
-```
-        FROMGIT: important patch from upstream
-
-        This is the detailed description of the important patch
-
-        Signed-off-by: Fred Jones <fred.jones@foo.org>
-
-        Bug: 135791357
-        (cherry picked from commit 878a2fd9de10b03d11d2f622250285c7e63deace
-         https://git.kernel.org/pub/scm/linux/kernel/git/foo/bar.git test-branch)
-        Change-Id: I4caaaa566ea080fa148c5e768bb1a0b6f7201c01
-        Signed-off-by: Joe Smith <joe.smith@foo.org>
+```bash
+cp kernel_patches/fs/susfs.c                fs/
+cp kernel_patches/include/linux/susfs.h \
+   kernel_patches/include/linux/susfs_def.h include/linux/
+patch -p1 --forward --fuzz=3 < kernel_patches/50_add_susfs_in_kernel-5.4.patch
 ```
 
+官方 5.4 补丁在 OPPO 魔改的 `fs/proc/fd.c` 上有 1 个 hunk 冲突（OPPO 删了 `seq_show` 的 `ino` 字段），
+`scripts/fix_fd_proc.py` 按 SUSFS 原语义补回 `sus_mount` 假 mnt_id 逻辑，同时保留 OPPO 的输出格式。
+其余任何 `.rej` 都会让流水线失败并打印，避免产出“看起来成功”的坏内核。
 
-- If the patch has been submitted to LKML, but not accepted into any maintainer tree
-    - tag the patch subject with `FROMLIST:`
-    - add a `Link:` tag with a link to the submittal on lore.kernel.org
-    - if changes were required, use `BACKPORT: FROMLIST:`
-    - Example:
-```
-        FROMLIST: important patch from upstream
+开启的配置：`CONFIG_KSU_SUSFS`、`_SUS_PATH`、`_SUS_MOUNT`、`_SUS_KSTAT`、`_SPOOF_UNAME`、`_ENABLE_LOG`、
+`_HIDE_KSU_SUSFS_SYMBOLS`、`_SPOOF_CMDLINE_OR_BOOTCONFIG`、`_OPEN_REDIRECT`、`_SUS_MAP`。
 
-        This is the detailed description of the important patch
+## 编译参数要点
 
-        Signed-off-by: Fred Jones <fred.jones@foo.org>
+- `DISABLE_WRAPPER=1`：内核默认用 `scripts/gcc-wrapper.py` 把任何新告警升级为致命错误，老 vendor 代码在 clang 下过不了。
+- 放宽 `-Wno-error=strict-prototypes` 等历史告警（只影响告警等级）。
+- `lto=false` 时关闭 `LTO_CLANG` / `CFI_CLANG` / `SHADOW_CALL_STACK` / `DEBUG_INFO`，避免 4 核 runner OOM。
 
-        Bug: 135791357
-        Link: https://lore.kernel.org/lkml/20190619171517.GA17557@someone.com/
-        Change-Id: I4caaaa566ea080fa148c5e768bb1a0b6f7201c01
-        Signed-off-by: Joe Smith <joe.smith@foo.org>
-```
+## 验证状态
 
-## Requirements for Android-specific patches: `ANDROID:`
+已在本地（Ubuntu + clang-12）对 `oppo/sm8350_u_14.0.0_find_x3_pro`（5.4.233）实测：
 
-- If the patch is fixing a bug to Android-specific code
-    - tag the patch subject with `ANDROID:`
-    - add a `Fixes:` tag that cites the patch with the bug
-    - Example:
-```
-        ANDROID: fix android-specific bug in foobar.c
+- 两仓库组装后断链 0
+- SUSFS 补丁 + `fd.c` 兼容修正后，`fs/susfs.o`、`fs/proc/fd.o`、`fs/namespace.o`、`fs/open.o` 编译通过
+- ReSukiSU v4.2.0-rc3 集成后 `olddefconfig` 输出 `CONFIG_KSU=y`、`CONFIG_KSU_SUSFS=y` 及全部子项 y
 
-        This is the detailed description of the important fix
+## 已知限制
 
-        Fixes: 1234abcd2468 ("foobar: add cool feature")
-        Change-Id: I4caaaa566ea080fa148c5e768bb1a0b6f7201c01
-        Signed-off-by: Joe Smith <joe.smith@foo.org>
-```
+- 12.1 分支存在 vendor 仓库缺失的 `include/soc/oplus/oppo_project.h`（唯一残留断链）；u_14 分支断链为 0。
+- `dtbo.img` 需用 `mkdtboimg.py` 从 `*.dtbo` 另行打包。
+- 可刷写的 `boot.img` 需要 `mkbootimg` + 原机参数，建议用 AnyKernel3。
+- ReSukiSU Manager APK 需自行从 `ReSukiSU/ReSukiSU` Releases 下载。
 
-- If the patch is a new feature
-    - tag the patch subject with `ANDROID:`
-    - add a `Bug:` tag with the Android bug (required for android-specific features)
+## 参考
 
-# Vibrator driver for HHG device
-## How to merge the driver into kernel source tree
-
- 1. Copy \${this_project}/drivers/hid/hid-aksys.c into \${your_kernel_root}/drivers/hid/
-
- 2. Compare and merge \${this_project}/drivers/hid/hid-ids.h into \${your_kernel_root}/drivers/hid/hid-ids.h :
- Add the following code before the last line of this file
-
-    ```c
-		#define USB_VENDER_ID_QUALCOMM  0x0a12
-		#define USB_VENDER_ID_TEMP_HHG_AKSY 0x1234
-		#define USB_PRODUCT_ID_AKSYS_HHG  0x1000
-    ```
-
- 3. Merge \${this_project}/drivers/hid/Kconfig into \${your_kernel_root}/drivers/hid/Kconfig :
-Add the following code before the last line of this file
-
-		config HID_AKSYS_QRD
-    		tristate "AKSys gamepad USB adapter support"
-    		depends on HID
-    		---help---
-    		Support for AKSys gamepad USB adapter
-
-    	config AKSYS_QRD_FF
-    		bool "AKSys gamepad USB adapter force feedback support"
-    		depends on HID_AKSYS_QRD
-    		select INPUT_FF_MEMLESS
-    		---help---
-    		Say Y here if you have a AKSys gamepad USB adapter and want to
-    		enable force feedback support for it.
-    		
- 4. Merge \${this_project}/drivers/hid/Makefile into \${your_kernel_root}/drivers/hid/Makefile :
- Add the following code at the end of this file
-
-		obj-$(CONFIG_HID_AKSYS_QRD)	+= hid-aksys.o
-		
- 5. Modify your kernel's default build configuration file. Add the following two lines:
-
-        CONFIG_HID_AKSYS_QRD=m
-        CONFIG_AKSYS_QRD_FF=y
+- `JackA1ltman/NonGKI_Kernel_Build_2nd`（Actions 结构与 SUSFS/AnyKernel3 处理方式）
+- `ReSukiSU/ReSukiSU`（`kernel/setup.sh`、`kernel/Kconfig` 的 KSU_SUSFS 菜单）
+- `simonpunk/susfs4ksu` 分支 `kernel-5.4`（`50_add_susfs_in_kernel-5.4.patch`、`fs/susfs.c`、`include/linux/susfs*.h`）
