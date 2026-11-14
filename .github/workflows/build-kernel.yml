@@ -70,9 +70,14 @@ on:
         default: true
 
       ak3_devices:
-        description: "AnyKernel3 设备代号（如 peux），留空则不打 AK3"
+        description: "AnyKernel3 设备代号，空格分隔多个（如 peux PEEM00），留空则不打 AK3"
         type: string
         default: ""
+
+      ak3_devicecheck:
+        description: "AK3 刷入时校验设备代号（关闭则 do.devicecheck=0，不拦机型）"
+        type: boolean
+        default: true
 
 permissions:
   contents: write
@@ -100,6 +105,7 @@ jobs:
       LTO: ${{ inputs.lto }}
       BUILD_MODULES: ${{ inputs.build_modules || 'false' }}
       AK3_DEVICES: ${{ inputs.ak3_devices }}
+      AK3_DEVICECHECK: ${{ inputs.ak3_devicecheck }}
 
     steps:
       - name: Checkout workflow repository
