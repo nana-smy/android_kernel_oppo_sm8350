@@ -11,7 +11,7 @@
 # 可选功能：
 #   ENABLE_RESUKISU=true  -> 集成 ReSukiSU（drivers/kernelsu），CONFIG_KSU=y
 #   ENABLE_SUSFS=true     -> 打 simonpunk/susfs4ksu 的 kernel-5.4 内核补丁 + KSU 侧内置 SUSFS
-#   LTO=true              -> 保留 CONFIG_LTO_CLANG / CFI / SCS（需要匹配的 clang，内存 >=16G）
+#   LTO=true              -> 保留 CONFIG_LTO_CLANG / CFI / SCS（需要匹配的 clang，内存 ≥16G）
 # =============================================================================
 set -euo pipefail
 
@@ -56,10 +56,10 @@ fi
 K="$WORK/kernel/msm-5.4"
 cd "$K"
 
-BROKEN=$(find . -type l ! -exec test -e {} \; -print | grep -v '~' | wc -l | tr -d ' ')
+BROKEN=$(find . -type l -not -name '*~*' ! -exec test -e {} \; -print 2>/dev/null | wc -l | tr -d ' ')
 log "断链检查: $BROKEN 个"
 if [ "$BROKEN" != "0" ]; then
-  find . -type l ! -exec test -e {} \; -print | grep -v '~' | head -20
+  find . -type l -not -name '*~*' ! -exec test -e {} \; -print 2>/dev/null | head -20 || true
   echo "[-] 目录布局不正确，请检查 \$WORK/kernel/msm-5.4 与 \$WORK/vendor 的相对位置"
   exit 1
 fi
@@ -120,7 +120,7 @@ if [ "$ENABLE_SUSFS" = "true" ]; then
   set +e
   patch -p1 --forward --fuzz=3 < "$S/50_add_susfs_in_kernel-5.4.patch" > /tmp/susfs.log 2>&1
   set -e
-  grep -E '^patching file' /tmp/susfs.log | wc -l | xargs -I{} echo "[+] 打进 {} 个文件"
+  grep -E '^patching file' /tmp/susfs.log | wc -l | xargs -I{} echo "[+] 打进 {} 个文件" || true
 
   if [ -f fs/proc/fd.c.rej ]; then
     echo "[!] fs/proc/fd.c 有冲突（OPPO 改过 seq_show），执行兼容修正"
@@ -221,7 +221,7 @@ fi
 log "7/8 收集产物"
 BOOT="$K/out/arch/arm64/boot"
 cp "$BOOT/Image" "$ARTIFACTS/"
-[ -f "$BOOT/Image.gz" ] && cp "$BOOT/Image.gz" "$ARTIFACTS/"
+if [ -f "$BOOT/Image.gz" ]; then cp "$BOOT/Image.gz" "$ARTIFACTS/"; fi
 cp "$K/out/.config" "$ARTIFACTS/config-${KERNEL_BRANCH//\//_}"
 mkdir -p "$ARTIFACTS/dtb"
 find "$K/out/arch/arm64/boot/dts" -name '*.dtb' -o -name '*.dtbo' 2>/dev/null | xargs -r -I{} cp {} "$ARTIFACTS/dtb/"
@@ -246,6 +246,7 @@ if [ -n "$AK3_DEVICES" ]; then
   git clone --depth 1 https://github.com/osm0sis/AnyKernel3.git "$AK3"
   rm -rf "$AK3/.git" "$AK3/README.md"
   cp "$BOOT/Image" "$AK3/Image"
+  grep -q "kernel.string=.*" "$AK3/anykernel.sh" || true
   sed -i "s/^device.name1=.*/device.name1=$AK3_DEVICES/" "$AK3/anykernel.sh" || true
   if ls "$ARTIFACTS"/dtb/*.dtb >/dev/null 2>&1; then
     mkdir -p "$AK3/dtb"
