@@ -43,12 +43,12 @@ on:
         default: true
 
       susfs_ref:
-        description: "susfs4ksu 分支"
+        description: "SUSFS 补丁来源"
         type: choice
-        default: "kernel-5.4"
+        default: "nongki-5.4"
         options:
-          - "kernel-5.4"
-          - "master"
+          - "nongki-5.4"      # JackA1ltman/NonGKI_Kernel_Build_2nd 最新 5.4 移植补丁（含新版 CMD）
+          - "kernel-5.4"      # susfs4ksu 官方 kernel-5.4
 
       clang_version:
         description: "AOSP prebuilt clang"
