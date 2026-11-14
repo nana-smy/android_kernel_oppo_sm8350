@@ -184,10 +184,17 @@ fi
 # -----------------------------------------------------------------------------
 log "5/8 生成 defconfig"
 rm -rf out && mkdir -p out
-ARCH=arm64 ./scripts/kconfig/merge_config.sh -m -O out \
-  arch/arm64/configs/gki_defconfig \
-  arch/arm64/configs/vendor/lahaina_GKI.config \
-  arch/arm64/configs/vendor/lahaina_QGKI.config > /dev/null
+DEVCFG="${DEVICE_DEFCONFIG:-$SCRIPT_DIR/../configs/sm8350_defconfig}"
+if [ -f "$DEVCFG" ]; then
+  echo "[+] 使用实机提取的 defconfig: $DEVCFG"
+  cp "$DEVCFG" out/.config
+else
+  echo "[!] 未找到实机 defconfig，回退到 gki+lahaina 拼装"
+  ARCH=arm64 ./scripts/kconfig/merge_config.sh -m -O out \
+    arch/arm64/configs/gki_defconfig \
+    arch/arm64/configs/vendor/lahaina_GKI.config \
+    arch/arm64/configs/vendor/lahaina_QGKI.config > /dev/null
+fi
 
 if [ "$ENABLE_RESUKISU" = "true" ]; then
 cat >> out/.config <<'EOF'
