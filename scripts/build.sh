@@ -352,7 +352,7 @@ for ln in s.splitlines():
             out.append("device.name%d=%s" % (i, n))
         inserted = True
         continue
-    if re.match(r"\s*device\.name\d+\s*=", ln):
+    if re.match(r"\s*device\.name\d+\s*=|\s*do\.modules\s*=|\s*do\.systemless\s*=", ln):
         continue
     out.append(ln)
 s = "\n".join(out) + "\n"
