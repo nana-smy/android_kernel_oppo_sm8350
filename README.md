@@ -1,101 +1,57 @@
 # OPPO SM8350 内核 CI
 
-本仓库内置 GitHub Actions 流水线：`.github/workflows/build-kernel.yml` + `scripts/build.sh`，按需编译 `oppo/sm8350_*`
-系列分支的非 GKI 内核，可选集成 **ReSukiSU** 与 **SUSFS**。
+GitHub Actions 编译 `oppo/sm8350_*` 非 GKI 内核（ColorOS / Android 14，Linux 5.4.233），
+ReSukiSU 与 SUSFS 均为**可选**。
 
-- 默认分支：`oppo/sm8350_u_14.0.0_find_x3_pro`（Linux 5.4.233，ColorOS 14 / Android 14）
-- 配套 vendor 仓库：`nana-smy/android_kernel_modules_and_devicetree_oppo_sm8350`（`vendor/oplus`、`vendor/qcom/proprietary/devicetree`、techpack）
+配套 vendor 仓库：`nana-smy/android_kernel_modules_and_devicetree_oppo_sm8350`
 
-## 使用
+## 用法
 
-`Actions` → **Build OPPO SM8350 Kernel** → **Run workflow**：
+`Actions` → **Build OPPO SM8350 Kernel** → **Run workflow**
 
 | 输入 | 说明 | 默认 |
 | --- | --- | --- |
-| `kernel_branch` | 内核 + vendor 同时使用的分支（两者分支名一一对应） | `oppo/sm8350_u_14.0.0_find_x3_pro` |
-| `resukisu` | 是否集成 ReSukiSU | true |
-| `resukisu_ref` | ReSukiSU 版本 | `v4.2.0-rc3` |
-| `susfs` | 是否打 SUSFS 内核补丁 | true |
-| `susfs_ref` | susfs4ksu 分支 | `kernel-5.4` |
-| `clang_version` | AOSP prebuilt clang | `clang-r487747c` |
+| `kernel_branch` | 内核 + vendor 同名分支（13 个可选） | `u_14.0.0_find_x3_pro` |
+| `resukisu` / `resukisu_ref` | 集成 ReSukiSU 及版本 | true / `v4.2.0-rc3` |
+| `susfs` / `susfs_ref` | 集成 SUSFS 及补丁来源（`nongki-5.4` 新版、`kernel-5.4` 官方） | true / `nongki-5.4` |
+| `clang_version` | AOSP prebuilt clang | `clang-r383902b`（clang 12） |
 | `lto` | 保留 LTO/CFI/SCS（吃内存） | false |
-| `build_modules` | 编译 .ko | true |
-| `ak3_enable` | 是否打包 AnyKernel3 刷机包（关则只出裸 Image/dtb） | false |
-| `ak3_devices` | 设备代号，空格分隔（`peux PEEM00`）；仅在校验开启时使用 | 空 |
-| `ak3_devicecheck` | 刷入时校验设备代号；关闭则 `do.devicecheck=0` 且忽略代号 | true |
+| `build_modules` | 编译 `.ko` | true |
+| `ak3_enable` | 打包 AnyKernel3（关则只出裸 Image/dtb） | false |
+| `ak3_devices` | 设备代号，空格分隔（`peux PEEM00`），仅校验开启时有效 | 空 |
+| `ak3_devicecheck` | 刷入时校验代号；关则 `do.devicecheck=0` 且忽略代号 | true |
+| `ak3_modules` | `.ko` 打成 ak3-helper 模块随 AK3 刷入（需 Magisk/KernelSU） | false |
 
-产物：`Image` / `Image.gz`、`dtb/`（含 dtbo）、`config-<branch>`、`modules/`、可选 `kernel-AK3-<branch>.zip`。
+产物：`Image`、`dtb/`（104 个）、`config-<branch>`、`modules/`（91 `.ko`）、可选 `kernel-AK3-<branch>.zip`。
 
-## 为什么必须两个仓库一起拉
+## 为什么必须两个仓库
 
-本内核仓库有 78~96 个符号链接指向仓库外的 `vendor/oplus/...`（充电、触控、性能调度、thermal、sensor、secureguard 等 OPPO 私有代码），
-`arch/arm64/boot/dts/vendor` 指向 `vendor/qcom/proprietary/devicetree`（lahaina 设备树）。
-只克隆内核仓库时 Kconfig 会直接报 `can't open file "kernel/sched_assist/Kconfig"`。
-
-脚本按 AOSP 布局组装：
+内核仓库有 96 个符号链接指向 `vendor/oplus/...` 与 `vendor/qcom/proprietary/devicetree`，
+单克隆会报 `can't open file "kernel/sched_assist/Kconfig"`。脚本按 AOSP 布局组装：
 
 ```
 $WORK/
-├── kernel/msm-5.4     # 内核（必须在 kernel/ 下一层，符号链接按 ../../../vendor 解析）
+├── kernel/msm-5.4   # 必须在 kernel/ 下一层，链接按 ../../../vendor 解析
 └── vendor/
-    ├── oplus/...
-    └── qcom/proprietary/devicetree
 ```
 
-并把 vendor 仓库的 `kernel/msm-5.4/techpack/{audio,camera,dataipa,display,video}` 合并进内核树。
-脚本开头做断链检查，非 0 直接失败并打印清单。
+再把 vendor 的 `kernel/msm-5.4/techpack/{audio,camera,dataipa,display,video}` 合入内核树，断链非 0 直接失败。
 
-## ReSukiSU 集成
+## 关键处理
 
-```bash
-git clone --depth 1 -b v4.2.0-rc3 https://github.com/ReSukiSU/ReSukiSU.git KernelSU
-ln -sfn ../KernelSU/kernel drivers/kernelsu
-# drivers/Makefile: obj-$(CONFIG_KSU) += kernelsu/
-# drivers/Kconfig:  source "drivers/kernelsu/Kconfig"
-```
+- **配置基准**：`configs/sm8350_defconfig`（实机导出，`CONFIG_QGKI=y`，provider/consumer 全 `=y`），`cp` 成 `out/.config` 后 `olddefconfig`。
+- **-Werror 全清**：克隆后把树里所有 `Makefile`/`Kbuild`/`*.mk` 的 `-Werror` 改成 `-Wno-error`（`Makefile:492` 那批 `-Werror=strict-prototypes` 光靠 `-Wno-error` 压不住），另加 `DISABLE_WRAPPER=1` 关 `gcc-wrapper.py`。
+- **ReSukiSU**：软链 `drivers/kernelsu` + `drivers/Makefile`/`Kconfig` 注入；配合 `scripts/susfs_inline_hook_patches.sh` 补 `ksu_handle_*` 钩子（non-GKI 必需）。
+- **SUSFS**：`cp fs/susfs.c`、`include/linux/susfs{,_def}.h` 后 `patch -p1`；OPPO 改过的 `fs/proc/fd.c` 冲突由 `scripts/fix_fd_proc.py` 按原语义修正，其余 `.rej` 直接失败。
+- **AK3**：`ak3_enable=false` 不出包；`ak3_devicecheck=false` 写 `do.devicecheck=0` 并忽略 `ak3_devices`；`ak3_modules=true` 时写 `do.modules=1` + `do.systemless=1`，自动生成可自清理的 ak3-helper 模块。
+- `lto=false` 时关 `LTO_CLANG`/`CFI_CLANG`/`SHADOW_CALL_STACK`/`DEBUG_INFO`，避免 4 核 runner OOM。
 
-`v4.2.x` 起 ReSukiSU 的 `kernel/Kconfig` 已自带 `KSU_SUSFS` 菜单；`v4.1.0` 没有（脚本会提示）。
-`CONFIG_KSU_SUSFS` 依赖 `THREAD_INFO_IN_TASK && 64BIT`，sm8350 满足。
+## 限制
 
-## SUSFS 集成（官方顺序）
-
-```bash
-cp kernel_patches/fs/susfs.c                fs/
-cp kernel_patches/include/linux/susfs.h \
-   kernel_patches/include/linux/susfs_def.h include/linux/
-patch -p1 --forward --fuzz=3 < kernel_patches/50_add_susfs_in_kernel-5.4.patch
-```
-
-官方 5.4 补丁在 OPPO 魔改的 `fs/proc/fd.c` 上有 1 个 hunk 冲突（OPPO 删了 `seq_show` 的 `ino` 字段），
-`scripts/fix_fd_proc.py` 按 SUSFS 原语义补回 `sus_mount` 假 mnt_id 逻辑，同时保留 OPPO 的输出格式。
-其余任何 `.rej` 都会让流水线失败并打印，避免产出“看起来成功”的坏内核。
-
-开启的配置：`CONFIG_KSU_SUSFS`、`_SUS_PATH`、`_SUS_MOUNT`、`_SUS_KSTAT`、`_SPOOF_UNAME`、`_ENABLE_LOG`、
-`_HIDE_KSU_SUSFS_SYMBOLS`、`_SPOOF_CMDLINE_OR_BOOTCONFIG`、`_OPEN_REDIRECT`、`_SUS_MAP`。
-
-## 编译参数要点
-
-- `DISABLE_WRAPPER=1`：内核默认用 `scripts/gcc-wrapper.py` 把任何新告警升级为致命错误，老 vendor 代码在 clang 下过不了。
-- 放宽 `-Wno-error=strict-prototypes` 等历史告警（只影响告警等级）。
-- `lto=false` 时关闭 `LTO_CLANG` / `CFI_CLANG` / `SHADOW_CALL_STACK` / `DEBUG_INFO`，避免 4 核 runner OOM。
-
-## 验证状态
-
-已在本地（Ubuntu + clang-12）对 `oppo/sm8350_u_14.0.0_find_x3_pro`（5.4.233）实测：
-
-- 两仓库组装后断链 0
-- SUSFS 补丁 + `fd.c` 兼容修正后，`fs/susfs.o`、`fs/proc/fd.o`、`fs/namespace.o`、`fs/open.o` 编译通过
-- ReSukiSU v4.2.0-rc3 集成后 `olddefconfig` 输出 `CONFIG_KSU=y`、`CONFIG_KSU_SUSFS=y` 及全部子项 y
-
-## 已知限制
-
-- 12.1 分支存在 vendor 仓库缺失的 `include/soc/oplus/oppo_project.h`（唯一残留断链）；u_14 分支断链为 0。
-- `dtbo.img` 需用 `mkdtboimg.py` 从 `*.dtbo` 另行打包。
-- 可刷写的 `boot.img` 需要 `mkbootimg` + 原机参数，建议用 AnyKernel3。
-- ReSukiSU Manager APK 需自行从 `ReSukiSU/ReSukiSU` Releases 下载。
+- `dtbo.img` 需 `mkdtboimg.py` 从 `*.dtbo` 另打。
+- 可刷写的 `boot.img` 需 `mkbootimg` + 原机 header；临时验证建议 `fastboot boot`（需 boot.img 模板）。
+- ReSukiSU Manager APK 自行从 Releases 下载。
 
 ## 参考
 
-- `JackA1ltman/NonGKI_Kernel_Build_2nd`（Actions 结构与 SUSFS/AnyKernel3 处理方式）
-- `ReSukiSU/ReSukiSU`（`kernel/setup.sh`、`kernel/Kconfig` 的 KSU_SUSFS 菜单）
-- `simonpunk/susfs4ksu` 分支 `kernel-5.4`（`50_add_susfs_in_kernel-5.4.patch`、`fs/susfs.c`、`include/linux/susfs*.h`）
+`JackA1ltman/NonGKI_Kernel_Build_2nd`、`ReSukiSU/ReSukiSU`、`simonpunk/susfs4ksu`（`kernel-5.4`）
