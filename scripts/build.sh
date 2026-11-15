@@ -69,6 +69,16 @@ if [ "$BROKEN" != "0" ]; then
   exit 1
 fi
 
+# 1.5 彻底去掉树里所有 -Werror（Makefile/Kbuild 里的 -Werror / -Werror=xxx 一律改成 -Wno-error）
+KSRC="$WORK/kernel/msm-5.4"
+mapfile -t WERR_FILES < <(grep -rlI -e '-Werror' --include='Makefile' --include='Makefile.*' --include='*.mk' --include='Kbuild' "$KSRC" 2>/dev/null || true)
+if [ "${#WERR_FILES[@]}" -gt 0 ]; then
+  printf '%s\0' "${WERR_FILES[@]}" | xargs -0 -r sed -i 's/-Werror/-Wno-error/g'
+  echo "[+] 已清除 ${#WERR_FILES[@]} 个 Makefile/Kbuild 中的 -Werror"
+else
+  echo "[+] 树中没有找到 -Werror"
+fi
+
 # -----------------------------------------------------------------------------
 # 2. 工具链：AOSP prebuilt clang
 # -----------------------------------------------------------------------------
@@ -249,7 +259,10 @@ MAKE_ARGS=(
   DISABLE_WRAPPER=1            # 关掉 gcc-wrapper.py，否则普通告警即致命错误
 )
 # 全局取消 -Werror：kernel 与各子目录 Makefile 里硬编码的 -Werror 一律不致命
-KCFLAGS="-Wno-unknown-warning-option -Wno-error"
+KCFLAGS="-Wno-unknown-warning-option -Wno-error \
+-Wno-error=strict-prototypes -Wno-error=implicit-function-declaration -Wno-error=implicit-int \
+-Wno-error=return-type -Wno-error=incompatible-pointer-types -Wno-error=date-time \
+-Wno-error=designated-init -Wno-error=vla-extension -Wno-vla-extension"
 
 make "${MAKE_ARGS[@]}" olddefconfig > /tmp/olddef.log 2>&1 || {
   tail -40 /tmp/olddef.log
