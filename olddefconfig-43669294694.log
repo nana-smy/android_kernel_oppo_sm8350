@@ -1,0 +1,163 @@
+make[1]: Entering directory '/home/runner/work/android_kernel_oppo_sm8350/android_kernel_oppo_sm8350/tree/kernel/msm-5.4/out'
+OplusKernelEnvConfig.mk:128: make OPLUS_FEATURE_FG_IO_OPT to be a macro here
+OplusKernelEnvConfig.mk:128: make OPLUS_FEATURE_PERFORMANCE to be a macro here
+OplusKernelEnvConfig.mk:128: make OPLUS_FEATURE_STORAGE_TOOL to be a macro here
+OplusKernelEnvConfig.mk:128: make OPLUS_FEATURE_UFS_DRIVER to be a macro here
+OplusKernelEnvConfig.mk:128: make OPLUS_FEATURE_UFS_SHOW_LATENCY to be a macro here
+OplusKernelEnvConfig.mk:128: make OPLUS_FEATURE_UFSPLUS to be a macro here
+OplusKernelEnvConfig.mk:128: make OPLUS_FEATURE_EMMC_SDCARD_OPTIMIZE to be a macro here
+OplusKernelEnvConfig.mk:128: make OPLUS_FEATURE_EMMC_DRIVER to be a macro here
+OplusKernelEnvConfig.mk:128: make OPLUS_FEATURE_HEALTHINFO to be a macro here
+OplusKernelEnvConfig.mk:128: make OPLUS_FEATURE_TASK_CPUSTATS to be a macro here
+OplusKernelEnvConfig.mk:128: make OPLUS_FEATURE_HANS_FREEZE to be a macro here
+OplusKernelEnvConfig.mk:128: make OPLUS_FEATURE_SCHED_ASSIST to be a macro here
+OplusKernelEnvConfig.mk:128: make OPLUS_FEATURE_TP_BSPFWUPDATE to be a macro here
+OplusKernelEnvConfig.mk:128: make OPLUS_FEATURE_LOWMEM_DBG to be a macro here
+OplusKernelEnvConfig.mk:128: make OPLUS_FEATURE_QCOM_PMICWD to be a macro here
+OplusKernelEnvConfig.mk:128: make OPLUS_FEATURE_CHG_BASIC to be a macro here
+OplusKernelEnvConfig.mk:128: make OPLUS_FEATURE_NWPOWER to be a macro here
+OplusKernelEnvConfig.mk:128: make OPLUS_FEATURE_WIFI_BDF to be a macro here
+OplusKernelEnvConfig.mk:128: make OPLUS_FEATURE_WIFI_MAC to be a macro here
+OplusKernelEnvConfig.mk:128: make OPLUS_FEATURE_AGINGTEST to be a macro here
+OplusKernelEnvConfig.mk:128: make OPLUS_FEATURE_SENSOR_SMEM to be a macro here
+OplusKernelEnvConfig.mk:128: make OPLUS_FEATURE_SSR to be a macro here
+OplusKernelEnvConfig.mk:128: make OPLUS_FEATURE_TP_BASIC to be a macro here
+OplusKernelEnvConfig.mk:128: make OPLUS_FEATURE_WIFI_SLA to be a macro here
+OplusKernelEnvConfig.mk:128: make OPLUS_FEATURE_PHOENIX to be a macro here
+OplusKernelEnvConfig.mk:128: make OPLUS_FEATURE_OLC to be a macro here
+OplusKernelEnvConfig.mk:128: make OPLUS_FEATURE_MEMORY_ISOLATE to be a macro here
+OplusKernelEnvConfig.mk:128: make OPLUS_FEATURE_MULTI_KSWAPD to be a macro here
+OplusKernelEnvConfig.mk:128: make OPLUS_FEATURE_WIFI_MTUDETECT to be a macro here
+OplusKernelEnvConfig.mk:128: make OPLUS_FEATURE_SELINUX_CONTROL_LOG to be a macro here
+OplusKernelEnvConfig.mk:128: make OPLUS_FEATURE_MULTI_FREEAREA to be a macro here
+OplusKernelEnvConfig.mk:128: make OPLUS_FEATURE_VIRTUAL_RESERVE_MEMORY to be a macro here
+OplusKernelEnvConfig.mk:128: make OPLUS_FEATURE_GPU_MINIDUMP to be a macro here
+OplusKernelEnvConfig.mk:128: make OPLUS_FEATURE_PROCESS_RECLAIM to be a macro here
+OplusKernelEnvConfig.mk:128: make OPLUS_FEATURE_ZRAM_OPT to be a macro here
+OplusKernelEnvConfig.mk:128: make OPLUS_FEATURE_AUDIO_FTM to be a macro here
+OplusKernelEnvConfig.mk:128: make OPLUS_FEATURE_SPEAKER_MUTE to be a macro here
+OplusKernelEnvConfig.mk:128: make OPLUS_FEATURE_MM_FEEDBACK to be a macro here
+OplusKernelEnvConfig.mk:128: make OPLUS_FEATURE_MI2S_SLAVE to be a macro here
+OplusKernelEnvConfig.mk:128: make OPLUS_FEATURE_KTV to be a macro here
+OplusKernelEnvConfig.mk:128: make OPLUS_FEATURE_MUTE_DETECT to be a macro here
+OplusKernelEnvConfig.mk:128: make OPLUS_FEATURE_MEMLEAK_DETECT to be a macro here
+OplusKernelEnvConfig.mk:128: make OPLUS_FEATURE_EXFAT_SUPPORT to be a macro here
+OplusKernelEnvConfig.mk:128: make OPLUS_FEATURE_SDCARDFS_SUPPORT to be a macro here
+OplusKernelEnvConfig.mk:128: make OPLUS_BUG_COMPATIBILITY to be a macro here
+OplusKernelEnvConfig.mk:128: make OPLUS_BUG_STABILITY to be a macro here
+OplusKernelEnvConfig.mk:128: make OPLUS_BUG_DEBUG to be a macro here
+OplusKernelEnvConfig.mk:128: make OPLUS_ARCH_INJECT to be a macro here
+OplusKernelEnvConfig.mk:128: make OPLUS_ARCH_EXTENDS to be a macro here
+OplusKernelEnvConfig.mk:128: make VENDOR_EDIT to be a macro here
+OplusKernelEnvConfig.mk:128: make COLOROS_EDIT to be a macro here
+OplusKernelEnvConfig.mk:128: make OPLUS_FEATURE_POWERINFO_STANDBY to be a macro here
+OplusKernelEnvConfig.mk:128: make OPLUS_FEATURE_POWERINFO_STANDBY_DEBUG to be a macro here
+OplusKernelEnvConfig.mk:128: make OPLUS_FEATURE_POWERINFO_RPMH to be a macro here
+OplusKernelEnvConfig.mk:128: make OPLUS_FEATURE_POWERINFO_FTM to be a macro here
+OplusKernelEnvConfig.mk:128: make OPLUS_FEATURE_CAMERA_COMMON to be a macro here
+OplusKernelEnvConfig.mk:128: make OPLUS_FEATURE_AUDIODETECT to be a macro here
+OplusKernelEnvConfig.mk:128: make OPLUS_AUDIO_PA_BOOST_VOLTAGE to be a macro here
+OplusKernelEnvConfig.mk:128: make OPLUS_FEATURE_MODEM_MINIDUMP to be a macro here
+OplusKernelEnvConfig.mk:128: make OPLUS_FEATURE_DATA_EVAL to be a macro here
+OplusKernelEnvConfig.mk:128: make OPLUS_FEATURE_WIFI_DCS_SWITCH to be a macro here
+OplusKernelEnvConfig.mk:128: make OPLUS_FEATURE_SOFTAP_DCS_SWITCH to be a macro here
+OplusKernelEnvConfig.mk:128: make OPLUS_FEATURE_WIFI_MINIDUMP to be a macro here
+OplusKernelEnvConfig.mk:128: make OPLUS_FEATURE_APP_MONITOR to be a macro here
+OplusKernelEnvConfig.mk:128: make OPLUS_FEATURE_PXLW_IRIS5 to be a macro here
+OplusKernelEnvConfig.mk:128: make OPLUS_FEATURE_MIC_VA_MIC_CLK_SWITCH to be a macro here
+OplusKernelEnvConfig.mk:128: make OPLUS_FEATURE_DNS_HOOK to be a macro here
+OplusKernelEnvConfig.mk:128: make OPLUS_FEATURE_SENSOR_FEEDBACK to be a macro here
+OplusKernelEnvConfig.mk:128: make OPLUS_FEATURE_DATA_MODULE to be a macro here
+OplusKernelEnvConfig.mk:169: "OPLUS_VND_ENV_CHG_OP9RT_PMIC_VOOCPHY is "
+OplusKernelEnvConfig.mk:174: "OPLUS_VND_ENV_CHG_OP9_PRO is "
+/home/runner/work/android_kernel_oppo_sm8350/android_kernel_oppo_sm8350/tree/kernel/msm-5.4/Makefile:547: OPLUS_KASAN_TEST is 
+/home/runner/work/android_kernel_oppo_sm8350/android_kernel_oppo_sm8350/tree/kernel/msm-5.4/Makefile:598: TARGET_MEMLEAK_DETECT_TEST value is ""
+/home/runner/work/android_kernel_oppo_sm8350/android_kernel_oppo_sm8350/tree/kernel/msm-5.4/Makefile:599: OPLUS_MEMLEAK_DETECT value is ""
+  GEN     Makefile
+  HOSTCC  scripts/basic/fixdep
+  HOSTCC  scripts/kconfig/conf.o
+  HOSTCC  scripts/kconfig/confdata.o
+  HOSTCC  scripts/kconfig/expr.o
+  LEX     scripts/kconfig/lexer.lex.c
+  YACC    scripts/kconfig/parser.tab.[ch]
+  HOSTCC  scripts/kconfig/lexer.lex.o
+  HOSTCC  scripts/kconfig/parser.tab.o
+  HOSTCC  scripts/kconfig/preprocess.o
+  HOSTCC  scripts/kconfig/symbol.o
+  HOSTLD  scripts/kconfig/conf
+scripts/kconfig/conf  --olddefconfig Kconfig
+arch/arm64/kernel/secureguard/keventupload/Kconfig:1:warning: ignoring unsupported character ''
+arch/arm64/kernel/secureguard/keventupload/Kconfig:2:warning: ignoring unsupported character ''
+arch/arm64/kernel/secureguard/keventupload/Kconfig:3:warning: ignoring unsupported character ''
+arch/arm64/kernel/secureguard/rootguard/Kconfig:1:warning: ignoring unsupported character ''
+arch/arm64/kernel/secureguard/rootguard/Kconfig:2:warning: ignoring unsupported character ''
+arch/arm64/kernel/secureguard/rootguard/Kconfig:3:warning: ignoring unsupported character ''
+arch/arm64/kernel/secureguard/rootguard/Kconfig:4:warning: ignoring unsupported character ''
+mm/damon/Kconfig:2:warning: ignoring unsupported character ''
+mm/damon/Kconfig:3:warning: ignoring unsupported character ''
+mm/damon/Kconfig:4:warning: ignoring unsupported character ''
+mm/damon/Kconfig:5:warning: ignoring unsupported character ''
+mm/damon/Kconfig:6:warning: ignoring unsupported character ''
+mm/damon/Kconfig:7:warning: ignoring unsupported character ''
+mm/damon/Kconfig:8:warning: ignoring unsupported character ''
+mm/damon/Kconfig:9:warning: ignoring unsupported character ''
+mm/damon/Kconfig:10:warning: ignoring unsupported character ''
+mm/damon/Kconfig:11:warning: ignoring unsupported character ''
+mm/damon/Kconfig:12:warning: ignoring unsupported character ''
+mm/damon/Kconfig:13:warning: ignoring unsupported character ''
+mm/damon/Kconfig:14:warning: ignoring unsupported character ''
+mm/damon/Kconfig:15:warning: ignoring unsupported character ''
+mm/damon/Kconfig:16:warning: ignoring unsupported character ''
+mm/damon/Kconfig:17:warning: ignoring unsupported character ''
+mm/damon/Kconfig:18:warning: ignoring unsupported character ''
+mm/damon/Kconfig:19:warning: ignoring unsupported character ''
+mm/damon/Kconfig:20:warning: ignoring unsupported character ''
+mm/damon/Kconfig:21:warning: ignoring unsupported character ''
+mm/zram_opt/Kconfig:5:warning: multi-line strings not supported
+net/oplus_nwpower/Kconfig:3:warning: ignoring unsupported character ''
+net/oplus_nwpower/Kconfig:4:warning: ignoring unsupported character ''
+net/oplus_nwpower/Kconfig:5:warning: ignoring unsupported character ''
+net/oplus_nwpower/Kconfig:6:warning: ignoring unsupported character ''
+drivers/misc/Kconfig:559:warning: ignoring type redefinition of 'OPLUS_RF_CABLE_MONITOR' from 'bool' to 'tristate'
+drivers/soc/oplus/system/oplus_saupwk/Kconfig:4:warning: ignoring unsupported character ''
+drivers/soc/oplus/system/oplus_saupwk/Kconfig:5:warning: ignoring unsupported character ''
+drivers/soc/oplus/system/oplus_saupwk/Kconfig:6:warning: ignoring unsupported character ''
+drivers/soc/oplus/system/oplus_saupwk/Kconfig:7:warning: ignoring unsupported character ''
+drivers/soc/oplus/system/cmdline_parser/Kconfig:3:warning: ignoring unsupported character ''
+drivers/soc/oplus/system/cmdline_parser/Kconfig:4:warning: ignoring unsupported character ''
+drivers/soc/oplus/system/cmdline_parser/Kconfig:5:warning: ignoring unsupported character ''
+drivers/soc/oplus/system/cmdline_parser/Kconfig:6:warning: ignoring unsupported character ''
+drivers/soc/oplus/system/cmdline_parser/Kconfig:8:warning: ignoring unsupported character ''
+drivers/soc/oplus/system/cmdline_parser/Kconfig:9:warning: ignoring unsupported character ''
+drivers/soc/oplus/system/cmdline_parser/Kconfig:10:warning: ignoring unsupported character ''
+drivers/soc/oplus/system/cmdline_parser/Kconfig:11:warning: ignoring unsupported character ''
+drivers/soc/oplus/system/cmdline_parser/Kconfig:12:warning: ignoring unsupported character ''
+drivers/soc/oplus/system/cmdline_parser/Kconfig:14:warning: ignoring unsupported character ''
+drivers/soc/oplus/system/cmdline_parser/Kconfig:15:warning: ignoring unsupported character ''
+drivers/soc/oplus/system/cmdline_parser/Kconfig:16:warning: ignoring unsupported character ''
+drivers/soc/oplus/system/cmdline_parser/Kconfig:17:warning: ignoring unsupported character ''
+drivers/soc/oplus/system/cmdline_parser/Kconfig:18:warning: ignoring unsupported character ''
+drivers/soc/oplus/system/cmdline_parser/Kconfig:20:warning: ignoring unsupported character ''
+drivers/soc/oplus/system/cmdline_parser/Kconfig:21:warning: ignoring unsupported character ''
+drivers/soc/oplus/system/cmdline_parser/Kconfig:22:warning: ignoring unsupported character ''
+drivers/soc/oplus/system/cmdline_parser/Kconfig:23:warning: ignoring unsupported character ''
+drivers/soc/oplus/system/cmdline_parser/Kconfig:24:warning: ignoring unsupported character ''
+drivers/soc/oplus/system/cmdline_parser/Kconfig:26:warning: ignoring unsupported character ''
+drivers/soc/oplus/system/cmdline_parser/Kconfig:27:warning: ignoring unsupported character ''
+drivers/soc/oplus/system/cmdline_parser/Kconfig:28:warning: ignoring unsupported character ''
+drivers/soc/oplus/system/cmdline_parser/Kconfig:29:warning: ignoring unsupported character ''
+drivers/soc/oplus/system/cmdline_parser/Kconfig:30:warning: ignoring unsupported character ''
+drivers/soc/oplus/system/cmdline_parser/Kconfig:32:warning: ignoring unsupported character ''
+drivers/soc/oplus/system/cmdline_parser/Kconfig:33:warning: ignoring unsupported character ''
+drivers/soc/oplus/system/cmdline_parser/Kconfig:34:warning: ignoring unsupported character ''
+drivers/soc/oplus/system/cmdline_parser/Kconfig:35:warning: ignoring unsupported character ''
+drivers/soc/oplus/system/cmdline_parser/Kconfig:36:warning: ignoring unsupported character ''
+drivers/soc/oplus/system/cmdline_parser/Kconfig:38:warning: ignoring unsupported character ''
+drivers/soc/oplus/system/cmdline_parser/Kconfig:39:warning: ignoring unsupported character ''
+drivers/soc/oplus/system/cmdline_parser/Kconfig:40:warning: ignoring unsupported character ''
+drivers/soc/oplus/system/cmdline_parser/Kconfig:41:warning: ignoring unsupported character ''
+drivers/soc/oplus/system/cmdline_parser/Kconfig:42:warning: ignoring unsupported character ''
+#
+# configuration written to .config
+#
+make[1]: Leaving directory '/home/runner/work/android_kernel_oppo_sm8350/android_kernel_oppo_sm8350/tree/kernel/msm-5.4/out'
